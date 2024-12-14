@@ -50,7 +50,7 @@
             status.textContent = 'Processing...';
             downloadLink.innerHTML = '';
 
-            fetch('/api/create-files', {
+            fetch('/api/create-files', { // The URL is now correct
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ hierarchy }),
