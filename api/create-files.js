@@ -49,7 +49,13 @@ export default async function handler(req, res) {
                 if (isFile) {
                     console.log(`Creating file: ${fullPath}`);
                     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-                    fs.writeFileSync(fullPath, relativePath.startsWith('.') ? `# Placeholder for ${relativePath}` : '', 'utf8');
+
+                    // Write dotfiles and normal files
+                    fs.writeFileSync(
+                        fullPath,
+                        relativePath.startsWith('.') ? `# Placeholder for ${relativePath}` : '',
+                        'utf8'
+                    );
                 } else {
                     console.log(`Creating directory: ${fullPath}`);
                     fs.mkdirSync(fullPath, { recursive: true });
@@ -62,7 +68,7 @@ export default async function handler(req, res) {
         const lines = hierarchy.split('\n');
         processHierarchy(lines, basePath);
 
-        // Create ZIP file and stream it
+        // Create ZIP file
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', 'attachment; filename=generatedFiles.zip');
 
@@ -74,7 +80,7 @@ export default async function handler(req, res) {
 
         archive.pipe(res);
 
-        // Manually add files and directories recursively to ensure all dotfiles are included
+        // Recursively add files and directories to the archive
         const addFilesToArchive = (dir, baseInArchive) => {
             const items = fs.readdirSync(dir, { withFileTypes: true });
             items.forEach((item) => {
@@ -91,6 +97,7 @@ export default async function handler(req, res) {
             });
         };
 
+        // Start adding files to the archive from the base path
         addFilesToArchive(basePath, 'project-name');
 
         // Finalize the archive
