@@ -60,12 +60,6 @@ export default async function handler(req, res) {
         const output = fs.createWriteStream(zipPath);
         const archive = archiver('zip', { zlib: { level: 9 } });
 
-        output.on('close', () => {
-            res.setHeader('Content-Type', 'application/zip');
-            res.setHeader('Content-Disposition', `attachment; filename="generatedFiles.zip"`);
-            res.download(zipPath);
-        });
-
         archive.on('error', (err) => {
             throw err;
         });
@@ -87,6 +81,16 @@ export default async function handler(req, res) {
         };
 
         walkDir(basePath);
+
+        output.on('close', () => {
+            const fileContents = fs.readFileSync(zipPath);
+
+            res.setHeader('Content-Type', 'application/zip');
+            res.setHeader('Content-Disposition', 'attachment; filename="generatedFiles.zip"');
+            res.setHeader('Content-Length', fileContents.length);
+
+            res.status(200).send(fileContents);
+        });
 
         archive.finalize();
     } catch (err) {
