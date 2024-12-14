@@ -17,7 +17,7 @@ export default async function handler(req, res) {
         return;
     }
 
-    const basePath = path.join('/tmp', 'generatedFiles'); // Temp directory for generated files
+    const basePath = path.join('/tmp', 'generatedFiles'); // Temporary directory for generated files
     const rootInArchive = 'project-name'; // Root folder name in the ZIP
 
     try {
@@ -88,7 +88,22 @@ export default async function handler(req, res) {
         // Add files to archive explicitly, including dotfiles
         const sourceFolder = path.join(basePath, rootInArchive);
 
-        archive.glob("**/*", { cwd: sourceFolder, dot: true });
+        // Function to add files and directories recursively
+        const addFilesToArchive = (dir, base) => {
+            const items = fs.readdirSync(dir, { withFileTypes: true });
+            items.forEach((item) => {
+                const fullPath = path.join(dir, item.name);
+                const relativePath = path.relative(base, fullPath);
+                if (item.isDirectory()) {
+                    addFilesToArchive(fullPath, base);
+                } else {
+                    console.log(`Adding file to archive: ${relativePath}`);
+                    archive.file(fullPath, { name: relativePath });
+                }
+            });
+        };
+
+        addFilesToArchive(sourceFolder, sourceFolder);
 
         // Finalize the archive
         await archive.finalize();
