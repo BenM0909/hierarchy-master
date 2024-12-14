@@ -5,80 +5,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hierarchy Master</title>
     <style>
+        /* Dark theme styles */
         body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Roboto', Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
             margin: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: black;
-            color: white;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
-            cursor: none;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+        }
+
+        h1 {
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ffffff;
+            text-align: center;
         }
 
         textarea {
-            width: 300px;
-            height: 150px;
-            background-color: #1a1a1a;
-            color: white;
-            border: 1px solid transparent;
-            border-radius: 5px;
+            width: 100%;
             padding: 10px;
-            resize: none;
-            outline: none;
-            transition: all 0.3s;
-            overflow-y: scroll;
-        }
-
-        textarea:hover {
-            border-color: transparent;
-        }
-
-        textarea:focus {
-            border: 1px solid white;
-            transform: scale(1.05);
+            border: 1px solid #333;
+            border-radius: 4px;
+            background-color: #2a2a2a;
+            color: #ffffff;
+            font-family: 'Roboto Mono', monospace;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
         }
 
         textarea::-webkit-scrollbar {
             display: none;
         }
 
+        textarea:focus {
+            outline: none;
+            border-color: #ffffff;
+        }
+
+        .button-container {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
         button {
             background-color: transparent;
-            color: white;
-            border: 1px solid white;
-            border-radius: 5px;
+            color: #ffffff;
+            border: 1px solid #ffffff;
             padding: 10px 20px;
-            font-size: 16px;
+            border-radius: 4px;
             cursor: pointer;
-            transition: transform 0.3s, background-color 0.3s;
+            font-size: 16px;
+            transition: all 0.3s;
         }
 
         button:hover {
-            transform: scale(1.1);
+            transform: scale(1.05);
+            background-color: rgba(255, 255, 255, 0.1);
         }
 
-        .cursor-circle {
-            position: fixed;
-            width: 20px;
-            height: 20px;
-            background-color: gray;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 9999;
-        }
-
-        .container {
+        #status {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #ffffff;
             text-align: center;
         }
 
-        textarea:hover ~ .cursor-circle,
-        textarea:focus ~ .cursor-circle {
-            display: none;
+        #downloadLink {
+            text-align: center;
         }
 
+        #downloadLink a {
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        #downloadLink a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
