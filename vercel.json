@@ -1,17 +1,30 @@
 {
     "version": 2,
     "builds": [
-        { "src": "api/**/*.js", "use": "@vercel/node" },
-        { "src": "index.html", "use": "@vercel/static" }
+        {
+            "src": "api/**/*.js",
+            "use": "@vercel/node"
+        },
+        {
+            "src": "index.html",
+            "use": "@vercel/static"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/.*",
+            "dest": "/api/create-files.js"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/index.html"
+        }
     ],
     "functions": {
         "api/create-files.js": {
-            "runtime": "@vercel/node",
-            "includeFiles": ["**/*", "**/.*"]
+            "memory": 256,
+            "maxDuration": 10
         }
     },
-    "routes": [
-        { "src": "/api/.*", "dest": "/api/create-files.js" },
-        { "src": "/(.*)", "dest": "/index.html" }
-    ]
+    "outputDirectory": "/tmp"
 }
