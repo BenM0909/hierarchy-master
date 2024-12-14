@@ -17,7 +17,7 @@ export default async function handler(req, res) {
         return;
     }
 
-    const basePath = path.join('/tmp', 'generatedFiles'); // Temporary directory for generated files
+    const basePath = path.join('/tmp', 'generatedFiles'); // Temp directory to create files
     const rootInArchive = 'project-name'; // Root folder name in the ZIP
 
     try {
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
         const lines = hierarchy.split('\n');
         processHierarchy(lines, basePath);
 
-        // Step 3: Verify `.gitignore` and other dotfiles exist
+        // Step 3: Validate `.gitignore` and other files in the correct directory
         const validateFile = (filePath) => {
             if (fs.existsSync(filePath)) {
                 console.log(`File exists: ${filePath}`);
@@ -73,12 +73,10 @@ export default async function handler(req, res) {
             }
         };
 
-        const gitignorePath = path.join(basePath, '.gitignore');
-        const envPath = path.join(basePath, '.env');
-        validateFile(gitignorePath);
-        validateFile(envPath);
+        validateFile(path.join(basePath, 'project-name', '.gitignore'));
+        validateFile(path.join(basePath, 'project-name', '.env'));
 
-        // Step 4: Create the ZIP
+        // Step 4: Create the ZIP file
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', 'attachment; filename=project.zip');
 
@@ -90,7 +88,7 @@ export default async function handler(req, res) {
 
         archive.pipe(res);
 
-        // Add files to archive without double nesting
+        // Step 5: Add files to archive without double nesting
         const addFilesToArchive = (dir, baseInArchive) => {
             const items = fs.readdirSync(dir, { withFileTypes: true });
             items.forEach((item) => {
