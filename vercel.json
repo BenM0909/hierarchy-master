@@ -11,9 +11,9 @@
     "functions": {
         "api/create-files.js": {
             "includeFiles": [
-                "**/.*",          // Include all dotfiles
-                "**/.*/*",        // Include nested dotfiles
-                "**/.*/*/**"      // Include deeply nested dotfiles
+                "**/.*",
+                "**/.*/*",
+                "**/.*/*/**"
             ]
         }
     }
