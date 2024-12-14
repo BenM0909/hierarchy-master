@@ -10,10 +10,6 @@
             color: #ffffff;
             font-family: Arial, sans-serif;
             padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
             text-align: center;
         }
         textarea {
@@ -31,18 +27,20 @@
             background-color: #444;
             color: white;
             border: none;
+            border-radius: 5px;
             cursor: pointer;
+        }
+        button:hover {
+            background-color: #555;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Hierarchy Master</h1>
-        <textarea id="fileHierarchy" placeholder="Enter your file hierarchy..."></textarea>
-        <button id="generateButton">Generate Files</button>
-        <p id="status"></p>
-        <p id="downloadLink"></p>
-    </div>
+    <h1>Hierarchy Master</h1>
+    <textarea id="fileHierarchy" placeholder="Enter your file hierarchy here..."></textarea>
+    <button id="generateButton">Generate Files</button>
+    <p id="status"></p>
+    <p id="downloadLink"></p>
     <script>
         document.getElementById('generateButton').addEventListener('click', () => {
             const hierarchy = document.getElementById('fileHierarchy').value;
@@ -60,7 +58,7 @@
                 .then(async response => {
                     if (!response.ok) {
                         const errorText = await response.text();
-                        throw new Error(`HTTP Error ${response.status}: ${errorText}`);
+                        throw new Error(`HTTP Error: ${response.status} - ${errorText}`);
                     }
                     return response.json();
                 })
@@ -73,7 +71,7 @@
                     }
                 })
                 .catch(err => {
-                    console.error(err);
+                    console.error("Error:", err.message);
                     status.textContent = `Error: ${err.message}`;
                 });
         });
