@@ -26,35 +26,38 @@ export default async function handler(req, res) {
             fs.rmSync(basePath, { recursive: true, force: true });
         }
 
-        // Process the hierarchy
-        const processHierarchy = (lines, basePath) => {
-            const stack = [{ path: basePath, depth: -1 }];
+        // Step 1: Parse the hierarchy and create the file system
+        const processHierarchy = (lines, rootPath) => {
+            const stack = [{ path: rootPath, depth: -1 }];
 
             lines.forEach((line) => {
                 const trimmedLine = line.trim();
                 if (!trimmedLine) return;
 
-                // Determine depth based on symbols
+                // Determine depth and type
                 const depth = (line.match(/^[│├└─ ]+/)?.[0] || '').replace(/[├└─│]/g, '').length / 2;
                 const isFile = !trimmedLine.endsWith('/');
                 const relativePath = trimmedLine.replace(/^[├└─│ ]+/, '').trim();
 
-                // Adjust stack based on depth
+                // Adjust the stack based on depth
                 while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
                     stack.pop();
                 }
 
-                const parentPath = stack[stack.length - 1]?.path || basePath;
+                const parentPath = stack[stack.length - 1]?.path || rootPath;
                 const fullPath = path.join(parentPath, relativePath);
 
                 if (isFile) {
+                    // Create the file
                     console.log(`Creating file: ${fullPath}`);
                     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-
-                    // Write placeholder content for all dotfiles and normal files
-                    const content = relativePath.startsWith('.') ? `# Placeholder for ${relativePath}\n` : '';
-                    fs.writeFileSync(fullPath, content, 'utf8');
+                    fs.writeFileSync(
+                        fullPath,
+                        relativePath.startsWith('.') ? `# Placeholder for ${relativePath}\n` : '',
+                        'utf8'
+                    );
                 } else {
+                    // Create the directory
                     console.log(`Creating directory: ${fullPath}`);
                     fs.mkdirSync(fullPath, { recursive: true });
                     stack.push({ path: fullPath, depth });
@@ -62,23 +65,23 @@ export default async function handler(req, res) {
             });
         };
 
-        // Split the hierarchy into lines and process it
         const lines = hierarchy.split('\n');
         processHierarchy(lines, basePath);
 
-        // Debugging: Log all files and directories before zipping
-        const debugFiles = (dir) => {
+        // Step 2: Debug - Verify file system contents
+        const debugFileSystem = (dir) => {
             const items = fs.readdirSync(dir, { withFileTypes: true });
             items.forEach((item) => {
                 const itemPath = path.join(dir, item.name);
                 console.log(item.isFile() ? `Found file: ${itemPath}` : `Found directory: ${itemPath}`);
-                if (item.isDirectory()) debugFiles(itemPath);
+                if (item.isDirectory()) debugFileSystem(itemPath);
             });
         };
-        console.log("Directory contents before zipping:");
-        debugFiles(basePath);
 
-        // Create ZIP file
+        console.log("File system contents before zipping:");
+        debugFileSystem(basePath);
+
+        // Step 3: Create the ZIP
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', 'attachment; filename=generatedFiles.zip');
 
@@ -90,7 +93,7 @@ export default async function handler(req, res) {
 
         archive.pipe(res);
 
-        // Recursively add files and directories to the archive
+        // Add files and directories to the archive
         const addFilesToArchive = (dir, baseInArchive) => {
             const items = fs.readdirSync(dir, { withFileTypes: true });
             items.forEach((item) => {
@@ -107,7 +110,6 @@ export default async function handler(req, res) {
             });
         };
 
-        // Start adding files to the archive from the base path
         addFilesToArchive(basePath, baseArchivePath);
 
         // Finalize the archive
