@@ -79,7 +79,20 @@ export default async function handler(req, res) {
         });
 
         archive.pipe(res);
+
+        // Add the entire directory
         archive.directory(basePath, false);
+
+        // Manually include .gitignore to ensure it's in the ZIP
+        const gitignorePath = path.join(basePath, '.gitignore');
+        if (fs.existsSync(gitignorePath)) {
+            console.log("Explicitly adding .gitignore to the archive");
+            archive.file(gitignorePath, { name: 'project-name/.gitignore' });
+        } else {
+            console.error(".gitignore was not found in the directory structure.");
+        }
+
+        // Finalize the archive
         await archive.finalize();
         console.log("ZIP file streamed successfully.");
     } catch (err) {
