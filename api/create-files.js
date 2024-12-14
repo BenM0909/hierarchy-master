@@ -27,6 +27,7 @@ export default async function handler(req, res) {
         }
 
         // Step 2: Parse hierarchy and create files
+        const tempDotfiles = []; // Track temp dotfiles for cleanup
         const processHierarchy = (lines, rootPath) => {
             const stack = [{ path: rootPath, depth: -1 }];
 
@@ -38,9 +39,11 @@ export default async function handler(req, res) {
                 const isFile = !trimmedLine.endsWith('/');
                 let relativePath = trimmedLine.replace(/^[├└─│ ]+/, '').trim();
 
-                // Rename dotfiles temporarily (e.g., `.gitignore` → `temp.gitignore`)
+                // Temporarily rename dotfiles (e.g., `.gitignore` → `temp.gitignore`)
                 if (relativePath.startsWith('.')) {
-                    relativePath = `temp${relativePath}`;
+                    const tempName = `temp${relativePath}`;
+                    tempDotfiles.push(path.join(rootPath, tempName));
+                    relativePath = tempName;
                 }
 
                 while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
@@ -84,7 +87,7 @@ export default async function handler(req, res) {
                 let itemPath = path.join(dir, item.name);
                 let archivePath = path.join(baseInArchive, item.name);
 
-                // Restore original names for dotfiles
+                // Restore dotfile names in the ZIP
                 if (item.name.startsWith('temp.')) {
                     const originalName = `.${item.name.slice(5)}`; // Strip 'temp.'
                     archivePath = path.join(baseInArchive, originalName);
@@ -103,9 +106,16 @@ export default async function handler(req, res) {
 
         addFilesToArchive(basePath, rootInArchive);
 
-        // Finalize the archive
+        // Step 5: Finalize and cleanup temporary dotfiles
         await archive.finalize();
         console.log("ZIP file creation complete. Streaming to client.");
+
+        // Remove temporary dotfiles or rename them back
+        tempDotfiles.forEach((tempFilePath) => {
+            const originalPath = tempFilePath.replace('/temp.', '/.');
+            console.log(`Restoring original dotfile name: ${originalPath}`);
+            fs.renameSync(tempFilePath, originalPath);
+        });
     } catch (err) {
         console.error("ERROR:", err.message);
         res.status(500).json({ success: false, error: err.message });
