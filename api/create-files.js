@@ -51,10 +51,12 @@ export default async function handler(req, res) {
                 const fullPath = `${parentPath}/${relativePath}`;
 
                 if (isFile) {
-                    // Add dotfiles and other files to the archive
+                    // Ensure dotfiles like `.gitignore` are explicitly handled
+                    console.log(`Adding file to archive: ${fullPath}`);
                     archive.append('', { name: fullPath });
                 } else {
                     // Add directories to the archive
+                    console.log(`Adding directory to archive: ${fullPath}`);
                     stack.push({ path: fullPath, depth });
                 }
             });
