@@ -60,6 +60,14 @@ export default async function handler(req, res) {
         const lines = hierarchy.split('\n');
         processHierarchy(lines, basePath);
 
+        // Debug: Verify all files, including dotfiles
+        console.log("Debugging file system before archiving:");
+        const debugFiles = (dir) => {
+            const files = fs.readdirSync(dir, { withFileTypes: true });
+            files.forEach((file) => console.log(`Found: ${file.name}`));
+        };
+        debugFiles(path.join(basePath, 'project-name'));
+
         // Step 3: Create the ZIP
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', 'attachment; filename=project.zip');
@@ -72,24 +80,9 @@ export default async function handler(req, res) {
 
         archive.pipe(res);
 
-        // Step 4: Add files to archive explicitly
-        const addFilesToArchive = (dir, baseInArchive) => {
-            const items = fs.readdirSync(dir, { withFileTypes: true });
-            items.forEach((item) => {
-                const itemPath = path.join(dir, item.name);
-                const archivePath = path.join(baseInArchive, path.relative(basePath, itemPath));
-
-                if (item.isFile()) {
-                    console.log(`Adding file to archive: ${archivePath}`);
-                    archive.file(itemPath, { name: archivePath });
-                } else if (item.isDirectory()) {
-                    console.log(`Processing directory: ${archivePath}`);
-                    addFilesToArchive(itemPath, baseInArchive); // Recursively add directories
-                }
-            });
-        };
-
-        addFilesToArchive(basePath, rootInArchive);
+        // Add files to archive explicitly, including dotfiles
+        const sourceFolder = path.join(basePath, 'project-name');
+        archive.glob("**/*", { cwd: sourceFolder, dot: true });
 
         // Finalize the archive
         await archive.finalize();
