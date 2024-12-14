@@ -6,7 +6,6 @@ export default async function handler(req, res) {
     console.log("API hit: /api/create-files.js");
 
     if (req.method !== 'POST') {
-        console.log("Invalid method:", req.method);
         res.status(405).json({ success: false, error: 'Method not allowed' });
         return;
     }
@@ -14,23 +13,20 @@ export default async function handler(req, res) {
     const { hierarchy } = req.body;
 
     if (!hierarchy || typeof hierarchy !== 'string') {
-        console.log("Invalid hierarchy format");
         res.status(400).json({ success: false, error: 'Invalid hierarchy format' });
         return;
     }
 
     const basePath = path.join('/tmp', 'generatedFiles');
-    console.log("Base path created:", basePath);
+    console.log("Base path:", basePath);
 
     try {
-        if (fs.existsSync(basePath)) {
-            console.log("Cleaning up existing directory...");
-            fs.rmSync(basePath, { recursive: true });
-        }
+        // Cleanup old files
+        if (fs.existsSync(basePath)) fs.rmSync(basePath, { recursive: true });
 
         const processHierarchy = (lines, basePath) => {
             const stack = [{ path: basePath, depth: -1 }];
-            lines.forEach((line) => {
+            lines.forEach(line => {
                 const trimmedLine = line.trim();
                 if (!trimmedLine) return;
 
@@ -38,9 +34,7 @@ export default async function handler(req, res) {
                 const isFile = !trimmedLine.endsWith('/');
                 const relativePath = trimmedLine.replace(/^[│├└─ ]+/, '');
 
-                while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
-                    stack.pop();
-                }
+                while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
 
                 const parentPath = stack[stack.length - 1]?.path || basePath;
                 const fullPath = path.join(parentPath, relativePath);
@@ -58,20 +52,18 @@ export default async function handler(req, res) {
         const lines = hierarchy.split('\n');
         processHierarchy(lines, basePath);
 
+        // Create ZIP file
         const zipPath = path.join('/tmp', 'generatedFiles.zip');
         const output = fs.createWriteStream(zipPath);
         const archive = archiver('zip', { zlib: { level: 9 } });
 
         output.on('close', () => {
-            console.log("ZIP file created successfully");
-            res.json({
-                success: true,
-                downloadUrl: `/api/downloads.js?file=generatedFiles.zip`,
-            });
+            console.log("ZIP file created successfully:", zipPath);
+            res.json({ success: true, downloadUrl: `/api/downloads.js?file=generatedFiles.zip` });
         });
 
-        archive.on('error', (err) => {
-            console.error("Error during ZIP creation:", err.message);
+        archive.on('error', err => {
+            console.error("ZIP creation error:", err.message);
             throw err;
         });
 
