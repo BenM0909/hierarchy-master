@@ -41,7 +41,10 @@ export default async function handler(req, res) {
                 const depth = (line.match(/^[│├└─ ]+/)?.[0] || '').replace(/[├└─│]/g, '').length / 2;
 
                 // Identify if it's a file or directory
+                // A file is any line that does NOT end with `/` OR starts with `.`
                 const isFile = !trimmedLine.endsWith('/') || /^\..+/.test(trimmedLine);
+
+                // Clean up the relative path (remove `├─`, `└─`, etc.)
                 const relativePath = trimmedLine.replace(/^[├└─│ ]+/, '').trim();
 
                 // Adjust stack based on depth
@@ -53,9 +56,12 @@ export default async function handler(req, res) {
                 const fullPath = `${parentPath}/${relativePath}`;
 
                 if (isFile) {
-                    // Add a file to the archive
+                    // Add a file to the archive, including dotfiles
                     console.log(`Adding file to archive: ${fullPath}`);
-                    archive.append('# Generated Content\n', { name: fullPath }); // Ensure content for `.gitignore`
+                    // Ensure content for `.gitignore` or empty files
+                    archive.append(relativePath.startsWith('.') ? '# Dotfile\n' : '', {
+                        name: fullPath,
+                    });
                 } else {
                     // Add a directory to the archive
                     console.log(`Adding directory to archive: ${fullPath}`);
