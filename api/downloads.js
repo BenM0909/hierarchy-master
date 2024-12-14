@@ -4,8 +4,8 @@ import path from 'path';
 export default function handler(req, res) {
     console.log("API hit: /api/downloads.js");
 
-    const { file } = req.query; // Extract file name from the query
-    const filePath = path.join('/tmp', file); // Use the `/tmp` directory for generated files
+    const { file } = req.query;
+    const filePath = path.join('/tmp', file);
 
     if (!fs.existsSync(filePath)) {
         console.error("File not found:", filePath);
@@ -13,18 +13,15 @@ export default function handler(req, res) {
         return;
     }
 
-    // Set the correct headers for downloading
+    // Set headers for file download
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader(
-        'Content-Disposition',
-        `attachment; filename=${path.basename(file)}`
-    );
+    res.setHeader('Content-Disposition', `attachment; filename=${path.basename(file)}`);
 
-    // Stream the file to the response
+    // Stream the file
     const stream = fs.createReadStream(filePath);
     stream.pipe(res);
-    stream.on('error', (err) => {
-        console.error("Error streaming file:", err.message);
-        res.status(500).send("Internal server error");
+    stream.on('error', err => {
+        console.error("File streaming error:", err.message);
+        res.status(500).send("Internal Server Error");
     });
 }
