@@ -17,19 +17,18 @@ export default async function handler(req, res) {
         return;
     }
 
-    const basePath = path.join('/tmp', 'generatedFiles'); // Temp directory to store files
-    const rootInArchive = 'project-name'; // Top-level folder in ZIP
+    const basePath = path.join('/tmp', 'generatedFiles');
+    const rootArchivePath = 'project-name';
 
     try {
-        // 1. Clean up existing directory
+        // Step 1: Clean up and prepare the file system
         if (fs.existsSync(basePath)) {
             fs.rmSync(basePath, { recursive: true, force: true });
         }
 
-        // 2. Create files and directories based on hierarchy
-        const processHierarchy = (lines, baseDir) => {
-            const stack = [{ path: baseDir, depth: -1 }];
-
+        // Step 2: Parse and create files
+        const processHierarchy = (lines, rootPath) => {
+            const stack = [{ path: rootPath, depth: -1 }];
             lines.forEach((line) => {
                 const trimmedLine = line.trim();
                 if (!trimmedLine) return;
@@ -42,13 +41,13 @@ export default async function handler(req, res) {
                     stack.pop();
                 }
 
-                const parentPath = stack[stack.length - 1]?.path || baseDir;
+                const parentPath = stack[stack.length - 1]?.path || rootPath;
                 const fullPath = path.join(parentPath, relativePath);
 
                 if (isFile) {
                     console.log(`Creating file: ${fullPath}`);
                     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-                    fs.writeFileSync(fullPath, relativePath.startsWith('.') ? `# ${relativePath}\n` : '', 'utf8');
+                    fs.writeFileSync(fullPath, relativePath.startsWith('.') ? `# Placeholder for ${relativePath}` : '', 'utf8');
                 } else {
                     console.log(`Creating directory: ${fullPath}`);
                     fs.mkdirSync(fullPath, { recursive: true });
@@ -60,24 +59,15 @@ export default async function handler(req, res) {
         const lines = hierarchy.split('\n');
         processHierarchy(lines, basePath);
 
-        // Debug: Check the created directory structure
-        const listFiles = (dir) => {
-            const items = fs.readdirSync(dir, { withFileTypes: true });
-            items.forEach((item) => {
-                const itemPath = path.join(dir, item.name);
-                if (item.isDirectory()) {
-                    console.log(`Directory: ${itemPath}`);
-                    listFiles(itemPath);
-                } else {
-                    console.log(`File: ${itemPath}`);
-                }
-            });
-        };
+        // Step 3: Validate `.gitignore` exists
+        const gitignorePath = path.join(basePath, '.gitignore');
+        if (fs.existsSync(gitignorePath)) {
+            console.log(".gitignore created successfully:", gitignorePath);
+        } else {
+            console.error("ERROR: .gitignore is missing in the file system.");
+        }
 
-        console.log("File system before zipping:");
-        listFiles(basePath);
-
-        // 3. Create the ZIP file
+        // Step 4: Create ZIP and validate contents
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', 'attachment; filename=project.zip');
 
@@ -89,8 +79,7 @@ export default async function handler(req, res) {
 
         archive.pipe(res);
 
-        // Add all files and directories manually to ensure everything is included
-        const addToArchive = (dir, baseInArchive) => {
+        const addFilesToArchive = (dir, baseInArchive) => {
             const items = fs.readdirSync(dir, { withFileTypes: true });
             items.forEach((item) => {
                 const itemPath = path.join(dir, item.name);
@@ -101,18 +90,18 @@ export default async function handler(req, res) {
                     archive.file(itemPath, { name: archivePath });
                 } else if (item.isDirectory()) {
                     console.log(`Processing directory: ${archivePath}`);
-                    addToArchive(itemPath, archivePath);
+                    addFilesToArchive(itemPath, archivePath);
                 }
             });
         };
 
-        addToArchive(basePath, rootInArchive);
+        addFilesToArchive(basePath, rootArchivePath);
 
-        // Finalize the ZIP file
+        // Step 5: Finalize ZIP and stream
         await archive.finalize();
         console.log("ZIP file creation complete.");
     } catch (err) {
-        console.error("Error processing hierarchy:", err.message);
+        console.error("ERROR:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 }
