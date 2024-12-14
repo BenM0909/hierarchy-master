@@ -3,8 +3,6 @@ import path from 'path';
 import archiver from 'archiver';
 
 export default async function handler(req, res) {
-    console.log("Request received at /api/create-files");
-
     if (req.method !== 'POST') {
         res.status(405).json({ success: false, error: 'Method not allowed' });
         return;
@@ -18,22 +16,20 @@ export default async function handler(req, res) {
     }
 
     const basePath = path.join('/tmp', 'generatedFiles');
-
     try {
         if (fs.existsSync(basePath)) {
-            console.log("Cleaning up existing directory...");
-            fs.rmSync(basePath, { recursive: true, force: true });
+            fs.rmSync(basePath, { recursive: true });
         }
 
         const processHierarchy = (lines, basePath) => {
             const stack = [{ path: basePath, depth: -1 }];
-            lines.forEach((line) => {
-                const trimmedLine = line.trim();
-                if (!trimmedLine) return;
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
 
-                const depth = (line.match(/^[│├└─ ]+/)?.[0] || '').replace(/[├└─│]/g, '').length / 2;
-                const isFile = !trimmedLine.endsWith('/');
-                const relativePath = trimmedLine.replace(/^[├└─│ ]+/, '');
+                const depth = (line.match(/^[│├└─ ]+/)?.[0] || '').length / 2;
+                const isFile = !trimmed.endsWith('/');
+                const relativePath = trimmed.replace(/^[│├└─ ]+/, '');
 
                 while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
                     stack.pop();
@@ -44,7 +40,7 @@ export default async function handler(req, res) {
 
                 if (isFile) {
                     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-                    fs.writeFileSync(fullPath, '', 'utf8');
+                    fs.writeFileSync(fullPath, '');
                 } else {
                     fs.mkdirSync(fullPath, { recursive: true });
                     stack.push({ path: fullPath, depth });
@@ -52,22 +48,17 @@ export default async function handler(req, res) {
             });
         };
 
-        const lines = hierarchy.split('\n');
-        processHierarchy(lines, basePath);
+        processHierarchy(hierarchy.split('\n'), basePath);
 
         const zipPath = path.join('/tmp', 'generatedFiles.zip');
         const output = fs.createWriteStream(zipPath);
-        const archive = archiver('zip', { zlib: { level: 9 } });
+        const archive = archiver('zip');
 
         output.on('close', () => {
-            res.json({
-                success: true,
-                downloadUrl: `/api/downloads?file=generatedFiles.zip`,
-            });
+            res.json({ success: true, downloadUrl: `/api/downloads?file=generatedFiles.zip` });
         });
 
-        archive.on('error', (err) => {
-            console.error("Error during ZIP creation:", err.message);
+        archive.on('error', err => {
             throw err;
         });
 
@@ -75,7 +66,6 @@ export default async function handler(req, res) {
         archive.directory(basePath, false);
         archive.finalize();
     } catch (err) {
-        console.error("Error in /api/create-files:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 }
