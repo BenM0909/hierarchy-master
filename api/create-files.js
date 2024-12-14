@@ -18,11 +18,14 @@ export default async function handler(req, res) {
     }
 
     const basePath = path.join('/tmp', 'generatedFiles');
+    const zipPath = path.join('/tmp', 'generatedFiles.zip');
+
     console.log("Base path:", basePath);
 
     try {
-        // Cleanup old files
+        // Cleanup old files and directories
         if (fs.existsSync(basePath)) fs.rmSync(basePath, { recursive: true });
+        if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
 
         const processHierarchy = (lines, basePath) => {
             const stack = [{ path: basePath, depth: -1 }];
@@ -52,13 +55,12 @@ export default async function handler(req, res) {
         const lines = hierarchy.split('\n');
         processHierarchy(lines, basePath);
 
-        // Create ZIP file
-        const zipPath = path.join('/tmp', 'generatedFiles.zip');
+        // Create the ZIP file
         const output = fs.createWriteStream(zipPath);
         const archive = archiver('zip', { zlib: { level: 9 } });
 
         output.on('close', () => {
-            console.log("ZIP file created successfully:", zipPath);
+            console.log(`ZIP file (${zipPath}) created successfully. Size: ${archive.pointer()} bytes`);
             res.json({ success: true, downloadUrl: `/api/downloads.js?file=generatedFiles.zip` });
         });
 
@@ -69,7 +71,7 @@ export default async function handler(req, res) {
 
         archive.pipe(output);
         archive.directory(basePath, false);
-        archive.finalize();
+        await archive.finalize(); // Ensure the ZIP is finalized
     } catch (err) {
         console.error("Error in /api/create-files.js:", err.message);
         res.status(500).json({ success: false, error: err.message });
