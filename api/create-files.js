@@ -17,11 +17,11 @@ export default async function handler(req, res) {
         return;
     }
 
-    const basePath = path.join('/tmp', 'generatedFiles'); // Temp directory to create files
+    const basePath = path.join('/tmp', 'generatedFiles'); // Temporary directory for generated files
     const rootInArchive = 'project-name'; // Root folder name in the ZIP
 
     try {
-        // Step 1: Clean up temp directory
+        // Step 1: Clean up existing directory
         if (fs.existsSync(basePath)) {
             fs.rmSync(basePath, { recursive: true, force: true });
         }
@@ -64,15 +64,21 @@ export default async function handler(req, res) {
         const lines = hierarchy.split('\n');
         processHierarchy(lines, basePath);
 
-        // Step 3: Validate `.gitignore`
-        const gitignorePath = path.join(basePath, '.gitignore');
-        if (fs.existsSync(gitignorePath)) {
-            console.log(`.gitignore created successfully at: ${gitignorePath}`);
-        } else {
-            console.error("ERROR: .gitignore is missing from the file system.");
-        }
+        // Step 3: Verify `.gitignore` and other dotfiles exist
+        const validateFile = (filePath) => {
+            if (fs.existsSync(filePath)) {
+                console.log(`File exists: ${filePath}`);
+            } else {
+                console.error(`ERROR: Missing file: ${filePath}`);
+            }
+        };
 
-        // Step 4: Create the ZIP file
+        const gitignorePath = path.join(basePath, '.gitignore');
+        const envPath = path.join(basePath, '.env');
+        validateFile(gitignorePath);
+        validateFile(envPath);
+
+        // Step 4: Create the ZIP
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', 'attachment; filename=project.zip');
 
@@ -84,26 +90,26 @@ export default async function handler(req, res) {
 
         archive.pipe(res);
 
-        // Step 5: Add all files to the ZIP explicitly
+        // Add files to archive without double nesting
         const addFilesToArchive = (dir, baseInArchive) => {
             const items = fs.readdirSync(dir, { withFileTypes: true });
             items.forEach((item) => {
                 const itemPath = path.join(dir, item.name);
-                const archivePath = path.join(baseInArchive, item.name);
+                const archivePath = path.join(baseInArchive, path.relative(basePath, itemPath)); // Fixes double nesting
 
                 if (item.isFile()) {
                     console.log(`Adding file to archive: ${archivePath}`);
                     archive.file(itemPath, { name: archivePath });
                 } else if (item.isDirectory()) {
                     console.log(`Processing directory: ${archivePath}`);
-                    addFilesToArchive(itemPath, archivePath);
+                    addFilesToArchive(itemPath, baseInArchive); // Recursively add directories
                 }
             });
         };
 
         addFilesToArchive(basePath, rootInArchive);
 
-        // Step 6: Finalize and stream the ZIP
+        // Finalize the archive
         await archive.finalize();
         console.log("ZIP file creation complete. Streaming to client.");
     } catch (err) {
