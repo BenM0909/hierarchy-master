@@ -20,11 +20,5 @@
             "dest": "/index.html"
         }
     ],
-    "functions": {
-        "api/create-files.js": {
-            "memory": 256,
-            "maxDuration": 10
-        }
-    },
     "outputDirectory": "/tmp"
 }
