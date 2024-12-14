@@ -51,10 +51,10 @@ export default async function handler(req, res) {
                 const fullPath = `${parentPath}/${relativePath}`;
 
                 if (isFile) {
-                    // Add a file to the archive
+                    // Add dotfiles and other files to the archive
                     archive.append('', { name: fullPath });
                 } else {
-                    // Add a directory to the archive and push it onto the stack
+                    // Add directories to the archive
                     stack.push({ path: fullPath, depth });
                 }
             });
