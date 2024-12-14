@@ -50,7 +50,7 @@ export default async function handler(req, res) {
                     console.log(`Creating file: ${fullPath}`);
                     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
 
-                    // Add placeholder content for dotfiles and other files
+                    // Add placeholder content for all dotfiles and other files
                     if (relativePath.startsWith('.')) {
                         fs.writeFileSync(fullPath, `# Placeholder content for ${relativePath}\n`, 'utf8');
                     } else {
@@ -84,20 +84,22 @@ export default async function handler(req, res) {
         archive.directory(basePath, false);
 
         // Manually ensure all dotfiles are included in the archive
-        const addDotfiles = (dir) => {
+        const addDotfilesToArchive = (dir, baseInArchive) => {
             const items = fs.readdirSync(dir, { withFileTypes: true });
             items.forEach((item) => {
                 const itemPath = path.join(dir, item.name);
+                const relativeArchivePath = path.join(baseInArchive, item.name);
+
                 if (item.isFile() && item.name.startsWith('.')) {
                     console.log(`Explicitly adding dotfile to archive: ${itemPath}`);
-                    archive.file(itemPath, { name: path.relative(basePath, itemPath) });
+                    archive.file(itemPath, { name: relativeArchivePath });
                 } else if (item.isDirectory()) {
-                    addDotfiles(itemPath); // Recursively handle directories
+                    addDotfilesToArchive(itemPath, relativeArchivePath); // Recursively handle directories
                 }
             });
         };
 
-        addDotfiles(basePath);
+        addDotfilesToArchive(basePath, '');
 
         // Finalize the archive
         await archive.finalize();
