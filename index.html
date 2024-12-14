@@ -67,7 +67,7 @@
                         status.textContent = 'Files generated successfully!';
                         downloadLink.innerHTML = `<a href="${data.downloadUrl}" download>Download your files</a>`;
                     } else {
-                        status.textContent = 'Error: ' + data.error;
+                        throw new Error(data.error);
                     }
                 })
                 .catch(err => {
