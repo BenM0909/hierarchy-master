@@ -36,7 +36,7 @@ export default async function handler(req, res) {
                 // Determine depth based on symbols
                 const depth = (line.match(/^[│├└─ ]+/)?.[0] || '').replace(/[├└─│]/g, '').length / 2;
                 const isFile = !trimmedLine.endsWith('/');
-                const relativePath = trimmedLine.replace(/^[├└─│ ]+/, '');
+                const relativePath = trimmedLine.replace(/^[├└─│ ]+/, '').trim();
 
                 // Adjust stack based on depth
                 while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
@@ -47,11 +47,17 @@ export default async function handler(req, res) {
                 const fullPath = path.join(parentPath, relativePath);
 
                 if (isFile) {
-                    // Create the file
+                    console.log(`Creating file: ${fullPath}`);
                     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-                    fs.writeFileSync(fullPath, '', 'utf8');
+
+                    // Explicitly handle .gitignore and other dotfiles
+                    if (relativePath === '.gitignore') {
+                        fs.writeFileSync(fullPath, '# This is a .gitignore file\n', 'utf8');
+                    } else {
+                        fs.writeFileSync(fullPath, '', 'utf8');
+                    }
                 } else {
-                    // Create the directory and push it onto the stack
+                    console.log(`Creating directory: ${fullPath}`);
                     fs.mkdirSync(fullPath, { recursive: true });
                     stack.push({ path: fullPath, depth });
                 }
