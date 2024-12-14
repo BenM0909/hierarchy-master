@@ -1,5 +1,3 @@
-import fs from 'fs';
-import path from 'path';
 import archiver from 'archiver';
 
 export default async function handler(req, res) {
@@ -18,7 +16,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Stream the ZIP file directly to the client
+        // Set headers for the response
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', 'attachment; filename=generatedFiles.zip');
 
@@ -31,32 +29,42 @@ export default async function handler(req, res) {
 
         archive.pipe(res);
 
+        // Process the hierarchy
         const processHierarchy = (lines, basePath) => {
             const stack = [{ path: basePath, depth: -1 }];
+
             lines.forEach((line) => {
                 const trimmedLine = line.trim();
                 if (!trimmedLine) return;
 
-                const depth = (line.match(/^[│├└─ ]+/)?.[0] || '').length / 2;
+                // Determine depth based on symbols
+                const depth = (line.match(/^[│├└─ ]+/)?.[0] || '').replace(/[├└─│]/g, '').length / 2;
                 const isFile = !trimmedLine.endsWith('/');
-                const relativePath = trimmedLine.replace(/^[│├└─ ]+/, '');
+                const relativePath = trimmedLine.replace(/^[├└─│ ]+/, '');
 
-                while (stack.length > 0 && stack[stack.length - 1].depth >= depth) stack.pop();
+                // Adjust stack based on depth
+                while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
+                    stack.pop();
+                }
 
                 const parentPath = stack[stack.length - 1]?.path || basePath;
-                const fullPath = path.join(parentPath, relativePath);
+                const fullPath = `${parentPath}/${relativePath}`;
 
                 if (isFile) {
-                    archive.append('', { name: relativePath });
+                    // Add a file to the archive
+                    archive.append('', { name: fullPath });
                 } else {
+                    // Add a directory to the archive and push it onto the stack
                     stack.push({ path: fullPath, depth });
                 }
             });
         };
 
+        // Split the hierarchy into lines and process it
         const lines = hierarchy.split('\n');
-        processHierarchy(lines, '/');
+        processHierarchy(lines, '');
 
+        // Finalize the archive
         await archive.finalize();
         console.log("ZIP file streamed successfully.");
     } catch (err) {
