@@ -3,7 +3,7 @@ import path from 'path';
 import archiver from 'archiver';
 
 export default async function handler(req, res) {
-    console.log("API hit: /api/create-files");
+    console.log("API hit: /api/create-files.js"); // Log with .js for debugging
 
     if (req.method !== 'POST') {
         console.log("Invalid method:", req.method);
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
             console.log("ZIP file created successfully");
             res.json({
                 success: true,
-                downloadUrl: `/api/downloads?file=generatedFiles.zip`,
+                downloadUrl: `/api/downloads.js?file=generatedFiles.zip`,
             });
         });
 
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
         archive.directory(basePath, false);
         archive.finalize();
     } catch (err) {
-        console.error("Error in /api/create-files:", err.message);
+        console.error("Error in /api/create-files.js:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 }
