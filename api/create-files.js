@@ -18,6 +18,7 @@ export default async function handler(req, res) {
     }
 
     const basePath = path.join('/tmp', 'generatedFiles');
+    const baseArchivePath = 'project-name'; // Top-level directory in the ZIP
 
     try {
         // Clean up existing directory
@@ -66,6 +67,18 @@ export default async function handler(req, res) {
         const lines = hierarchy.split('\n');
         processHierarchy(lines, basePath);
 
+        // Debugging: Log all files in the directory before zipping
+        const debugFiles = (dir) => {
+            const items = fs.readdirSync(dir, { withFileTypes: true });
+            items.forEach((item) => {
+                const itemPath = path.join(dir, item.name);
+                console.log(item.isFile() ? `Found file: ${itemPath}` : `Found directory: ${itemPath}`);
+                if (item.isDirectory()) debugFiles(itemPath);
+            });
+        };
+        console.log("Directory contents before zipping:");
+        debugFiles(basePath);
+
         // Create ZIP file
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', 'attachment; filename=generatedFiles.zip');
@@ -83,7 +96,7 @@ export default async function handler(req, res) {
             const items = fs.readdirSync(dir, { withFileTypes: true });
             items.forEach((item) => {
                 const itemPath = path.join(dir, item.name);
-                const archivePath = path.join(baseInArchive, item.name).replace(/^project-name\/project-name/, 'project-name');
+                const archivePath = path.join(baseInArchive, item.name);
 
                 if (item.isFile()) {
                     console.log(`Adding file to archive: ${archivePath}`);
@@ -96,7 +109,7 @@ export default async function handler(req, res) {
         };
 
         // Start adding files to the archive from the base path
-        addFilesToArchive(basePath, 'project-name');
+        addFilesToArchive(basePath, baseArchivePath);
 
         // Finalize the archive
         await archive.finalize();
