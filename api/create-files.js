@@ -88,7 +88,6 @@ export default async function handler(req, res) {
         // Add files to archive explicitly, including dotfiles
         const sourceFolder = path.join(basePath, rootInArchive);
 
-        // Function to add files and directories recursively
         const addFilesToArchive = (dir, base) => {
             const items = fs.readdirSync(dir, { withFileTypes: true });
             items.forEach((item) => {
