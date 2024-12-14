@@ -50,7 +50,7 @@
             status.textContent = 'Processing...';
             downloadLink.innerHTML = '';
 
-            fetch('/api/create-files.js', { // Trigger the file creation API
+            fetch('/api/create-files.js', { // API for creating the files
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ hierarchy }),
@@ -65,24 +65,8 @@
                 .then(data => {
                     if (data.success) {
                         status.textContent = 'Files generated successfully!';
-                        // Fetch the ZIP file and force the browser to download it
-                        fetch(data.downloadUrl)
-                            .then(res => res.blob()) // Convert response to Blob
-                            .then(blob => {
-                                const url = window.URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.style.display = 'none';
-                                a.href = url;
-                                a.download = 'generatedFiles.zip'; // Force file name
-                                document.body.appendChild(a);
-                                a.click();
-                                window.URL.revokeObjectURL(url);
-                                status.textContent = 'Download complete!';
-                            })
-                            .catch(err => {
-                                console.error("Error downloading ZIP file:", err.message);
-                                status.textContent = `Error: ${err.message}`;
-                            });
+                        // Fetch the ZIP file and force download
+                        window.location.href = data.downloadUrl;
                     } else {
                         throw new Error(data.error);
                     }
