@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     console.log("API hit: /api/create-files");
 
     if (req.method !== 'POST') {
-        console.log("Invalid method: " + req.method);
+        console.log("Invalid method:", req.method);
         res.status(405).json({ success: false, error: 'Method not allowed' });
         return;
     }
@@ -23,13 +23,11 @@ export default async function handler(req, res) {
     console.log("Base path created:", basePath);
 
     try {
-        // Clean up existing directory
         if (fs.existsSync(basePath)) {
             console.log("Cleaning up existing directory...");
             fs.rmSync(basePath, { recursive: true });
         }
 
-        // Process hierarchy
         const processHierarchy = (lines, basePath) => {
             const stack = [{ path: basePath, depth: -1 }];
             lines.forEach((line) => {
@@ -60,7 +58,6 @@ export default async function handler(req, res) {
         const lines = hierarchy.split('\n');
         processHierarchy(lines, basePath);
 
-        // Create a ZIP file
         const zipPath = path.join('/tmp', 'generatedFiles.zip');
         const output = fs.createWriteStream(zipPath);
         const archive = archiver('zip', { zlib: { level: 9 } });
