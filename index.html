@@ -4,217 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hierarchy Master</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Roboto+Mono&display=swap" rel="stylesheet">
     <style>
         body {
             background-color: #1a1a1a;
             color: #ffffff;
-            font-family: 'Roboto', Arial, sans-serif;
+            font-family: Arial, sans-serif;
             padding: 20px;
-            margin: 0;
         }
-
         .container {
             max-width: 800px;
             margin: 0 auto;
-        }
-
-        h1 {
-            color: #ffffff;
             text-align: center;
         }
-
         textarea {
             width: 100%;
-            padding: 10px;
-            border-radius: 4px;
+            height: 200px;
             background-color: #2a2a2a;
-            color: #ffffff;
-            font-family: 'Roboto Mono', monospace;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 10px;
         }
-
         button {
-            background-color: transparent;
-            color: #ffffff;
-            border: 1px solid #ffffff;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        button:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        #status {
-            text-align: center;
             margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #444;
+            color: white;
+            border: none;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Hierarchy Master</h1>
-        <form id="hierarchyForm">
-            <textarea id="fileHierarchy" rows="10" placeholder="Enter your file hierarchy here..."></textarea>
-            <div style="text-align: center; margin-top: 20px;">
-                <button type="button" id="generateButton">Generate Files</button>
-            </div>
-        </form>
+        <textarea id="fileHierarchy" placeholder="Enter your file hierarchy..."></textarea>
+        <button id="generateButton">Generate Files</button>
         <p id="status"></p>
         <p id="downloadLink"></p>
     </div>
-
     <script>
-        document.getElementById('generateButton').addEventListener('click', function () {
-            const fileHierarchy = document.getElementById('fileHierarchy').value;
+        document.getElementById('generateButton').addEventListener('click', () => {
+            const hierarchy = document.getElementById('fileHierarchy').value;
             const status = document.getElementById('status');
             const downloadLink = document.getElementById('downloadLink');
 
-            if (!fileHierarchy.trim()) {
-                status.textContent = 'Please enter a valid file hierarchy.';
-                return;
-            }
+            status.textContent = 'Processing...';
+            downloadLink.innerHTML = '';
 
             fetch('/api/create-files', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ hierarchy: fileHierarchy }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hierarchy }),
             })
                 .then(async response => {
                     if (!response.ok) {
                         const errorText = await response.text();
-                        throw new Error(`HTTP Error: ${response.status}. Response: ${errorText}`);
+                        throw new Error(`HTTP Error ${response.status}: ${errorText}`);
                     }
                     return response.json();
                 })
                 .then(data => {
                     if (data.success) {
-                        status.textContent = 'Files and folders generated successfully!';
-                        downloadLink.innerHTML = `<a href="${data.downloadUrl}" download>Download the generated files</a>`;
+                        status.textContent = 'Files generated successfully!';
+                        downloadLink.innerHTML = `<a href="${data.downloadUrl}" download>Download your files</a>`;
                     } else {
-                        status.textContent = 'Failed to generate files: ' + data.error;
-                        downloadLink.innerHTML = '';
+                        status.textContent = 'Error: ' + data.error;
                     }
                 })
                 .catch(err => {
-                    console.error('Error during fetch:', err.message);
+                    console.error(err);
                     status.textContent = `Error: ${err.message}`;
-                    downloadLink.innerHTML = '';
-                });
-        });
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hierarchy Master</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Roboto+Mono&display=swap" rel="stylesheet">
-    <style>
-        body {
-            background-color: #1a1a1a;
-            color: #ffffff;
-            font-family: 'Roboto', Arial, sans-serif;
-            padding: 20px;
-            margin: 0;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        h1 {
-            color: #ffffff;
-            text-align: center;
-        }
-
-        textarea {
-            width: 100%;
-            padding: 10px;
-            border-radius: 4px;
-            background-color: #2a2a2a;
-            color: #ffffff;
-            font-family: 'Roboto Mono', monospace;
-        }
-
-        button {
-            background-color: transparent;
-            color: #ffffff;
-            border: 1px solid #ffffff;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        button:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        #status {
-            text-align: center;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Hierarchy Master</h1>
-        <form id="hierarchyForm">
-            <textarea id="fileHierarchy" rows="10" placeholder="Enter your file hierarchy here..."></textarea>
-            <div style="text-align: center; margin-top: 20px;">
-                <button type="button" id="generateButton">Generate Files</button>
-            </div>
-        </form>
-        <p id="status"></p>
-        <p id="downloadLink"></p>
-    </div>
-
-    <script>
-        document.getElementById('generateButton').addEventListener('click', function () {
-            const fileHierarchy = document.getElementById('fileHierarchy').value;
-            const status = document.getElementById('status');
-            const downloadLink = document.getElementById('downloadLink');
-
-            if (!fileHierarchy.trim()) {
-                status.textContent = 'Please enter a valid file hierarchy.';
-                return;
-            }
-
-            fetch('/api/create-files', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ hierarchy: fileHierarchy }),
-            })
-                .then(async response => {
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`HTTP Error: ${response.status}. Response: ${errorText}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        status.textContent = 'Files and folders generated successfully!';
-                        downloadLink.innerHTML = `<a href="${data.downloadUrl}" download>Download the generated files</a>`;
-                    } else {
-                        status.textContent = 'Failed to generate files: ' + data.error;
-                        downloadLink.innerHTML = '';
-                    }
-                })
-                .catch(err => {
-                    console.error('Error during fetch:', err.message);
-                    status.textContent = `Error: ${err.message}`;
-                    downloadLink.innerHTML = '';
                 });
         });
     </script>
