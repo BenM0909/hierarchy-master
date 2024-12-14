@@ -11,36 +11,25 @@
             color: #ffffff;
             font-family: 'Roboto', Arial, sans-serif;
             line-height: 1.6;
-            padding: 20px;
             margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
 
         .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            position: relative;
+            text-align: center;
         }
 
         h1 {
             color: #ffffff;
-            text-align: center;
             margin-bottom: 2rem;
         }
 
-        form {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #ffffff;
-            text-align: center;
-        }
-
         textarea {
-            width: 100%;
+            width: 60%;
+            height: 40%;
             padding: 10px;
             border: 1px solid #333;
             border-radius: 4px;
@@ -61,7 +50,6 @@
         }
 
         .button-container {
-            text-align: center;
             margin-top: 1rem;
         }
 
@@ -85,7 +73,6 @@
             margin-top: 20px;
             font-weight: bold;
             color: #ffffff;
-            text-align: center;
         }
 
         #downloadLink {
@@ -103,10 +90,14 @@
     </style>
 </head>
 <body>
-    <h1>Hierarchy Master</h1>
-    <textarea id="fileHierarchy" placeholder="Enter your file hierarchy here..."></textarea>
-    <button id="generateButton">Generate Files</button>
-    <p id="status"></p>
+    <div class="container">
+        <h1>Hierarchy Master</h1>
+        <textarea id="fileHierarchy" placeholder="Enter your file hierarchy here..."></textarea>
+        <div class="button-container">
+            <button id="generateButton">Generate Files</button>
+        </div>
+        <p id="status"></p>
+    </div>
     <script>
         document.getElementById('generateButton').addEventListener('click', () => {
             const hierarchy = document.getElementById('fileHierarchy').value;
