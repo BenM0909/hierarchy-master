@@ -7,6 +7,8 @@ export default function handler(req, res) {
     const { file } = req.query;
     const filePath = path.join('/tmp', file);
 
+    console.log("File path being served:", filePath);
+
     if (!fs.existsSync(filePath)) {
         console.error("File not found:", filePath);
         res.status(404).send("File not found");
