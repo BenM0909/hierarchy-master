@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import archiver from 'archiver';
 
 export default async function handler(req, res) {
@@ -15,19 +17,13 @@ export default async function handler(req, res) {
         return;
     }
 
+    const basePath = path.join('/tmp', 'generatedFiles');
+
     try {
-        // Set headers for the response
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', 'attachment; filename=generatedFiles.zip');
-
-        const archive = archiver('zip', { zlib: { level: 9 } });
-
-        archive.on('error', (err) => {
-            console.error("Error creating ZIP archive:", err);
-            res.status(500).send("Internal Server Error");
-        });
-
-        archive.pipe(res);
+        // Clean up existing directory
+        if (fs.existsSync(basePath)) {
+            fs.rmSync(basePath, { recursive: true, force: true });
+        }
 
         // Process the hierarchy
         const processHierarchy = (lines, basePath) => {
@@ -39,13 +35,8 @@ export default async function handler(req, res) {
 
                 // Determine depth based on symbols
                 const depth = (line.match(/^[│├└─ ]+/)?.[0] || '').replace(/[├└─│]/g, '').length / 2;
-
-                // Identify if it's a file or directory
-                // A file is any line that does NOT end with `/` OR starts with `.`
-                const isFile = !trimmedLine.endsWith('/') || /^\..+/.test(trimmedLine);
-
-                // Clean up the relative path (remove `├─`, `└─`, etc.)
-                const relativePath = trimmedLine.replace(/^[├└─│ ]+/, '').trim();
+                const isFile = !trimmedLine.endsWith('/');
+                const relativePath = trimmedLine.replace(/^[├└─│ ]+/, '');
 
                 // Adjust stack based on depth
                 while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
@@ -53,18 +44,15 @@ export default async function handler(req, res) {
                 }
 
                 const parentPath = stack[stack.length - 1]?.path || basePath;
-                const fullPath = `${parentPath}/${relativePath}`;
+                const fullPath = path.join(parentPath, relativePath);
 
                 if (isFile) {
-                    // Add a file to the archive, including dotfiles
-                    console.log(`Adding file to archive: ${fullPath}`);
-                    // Ensure content for `.gitignore` or empty files
-                    archive.append(relativePath.startsWith('.') ? '# Dotfile\n' : '', {
-                        name: fullPath,
-                    });
+                    // Create the file
+                    fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+                    fs.writeFileSync(fullPath, '', 'utf8');
                 } else {
-                    // Add a directory to the archive
-                    console.log(`Adding directory to archive: ${fullPath}`);
+                    // Create the directory and push it onto the stack
+                    fs.mkdirSync(fullPath, { recursive: true });
                     stack.push({ path: fullPath, depth });
                 }
             });
@@ -72,9 +60,20 @@ export default async function handler(req, res) {
 
         // Split the hierarchy into lines and process it
         const lines = hierarchy.split('\n');
-        processHierarchy(lines, '');
+        processHierarchy(lines, basePath);
 
-        // Finalize the archive
+        // Create ZIP file and stream it
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', 'attachment; filename=generatedFiles.zip');
+
+        const archive = archiver('zip', { zlib: { level: 9 } });
+        archive.on('error', (err) => {
+            console.error("Error creating ZIP archive:", err);
+            res.status(500).send("Internal Server Error");
+        });
+
+        archive.pipe(res);
+        archive.directory(basePath, false);
         await archive.finalize();
         console.log("ZIP file streamed successfully.");
     } catch (err) {
