@@ -145,7 +145,7 @@ project-name/
                 return;
             }
 
-            fetch('/create-files', {
+            fetch('/api/create-files', { // Updated for Vercel API route
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
