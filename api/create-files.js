@@ -17,20 +17,23 @@ export default async function handler(req, res) {
         return;
     }
 
-    const basePath = path.join('/tmp', 'generatedFiles');
-    const zipPath = path.join('/tmp', 'generatedFiles.zip');
-
-    console.log("Base path:", basePath);
-    console.log("ZIP path:", zipPath);
-
     try {
-        // Cleanup old files and directories
-        if (fs.existsSync(basePath)) fs.rmSync(basePath, { recursive: true });
-        if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
+        // Stream the ZIP file directly to the client
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', 'attachment; filename=generatedFiles.zip');
+
+        const archive = archiver('zip', { zlib: { level: 9 } });
+
+        archive.on('error', (err) => {
+            console.error("Error creating ZIP archive:", err);
+            res.status(500).send("Internal Server Error");
+        });
+
+        archive.pipe(res);
 
         const processHierarchy = (lines, basePath) => {
             const stack = [{ path: basePath, depth: -1 }];
-            lines.forEach(line => {
+            lines.forEach((line) => {
                 const trimmedLine = line.trim();
                 if (!trimmedLine) return;
 
@@ -44,37 +47,20 @@ export default async function handler(req, res) {
                 const fullPath = path.join(parentPath, relativePath);
 
                 if (isFile) {
-                    fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-                    fs.writeFileSync(fullPath, '');
+                    archive.append('', { name: relativePath });
                 } else {
-                    fs.mkdirSync(fullPath, { recursive: true });
                     stack.push({ path: fullPath, depth });
                 }
             });
         };
 
         const lines = hierarchy.split('\n');
-        processHierarchy(lines, basePath);
+        processHierarchy(lines, '/');
 
-        // Create the ZIP file
-        const output = fs.createWriteStream(zipPath);
-        const archive = archiver('zip', { zlib: { level: 9 } });
-
-        output.on('close', () => {
-            console.log(`ZIP file created successfully. Size: ${archive.pointer()} bytes`);
-            res.json({ success: true, downloadUrl: `/api/downloads.js?file=generatedFiles.zip` });
-        });
-
-        archive.on('error', err => {
-            console.error("ZIP creation error:", err.message);
-            throw err;
-        });
-
-        archive.pipe(output);
-        archive.directory(basePath, false);
-        await archive.finalize(); // Ensure the ZIP is finalized
+        await archive.finalize();
+        console.log("ZIP file streamed successfully.");
     } catch (err) {
-        console.error("Error in /api/create-files.js:", err.message);
+        console.error("Error processing hierarchy:", err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 }
