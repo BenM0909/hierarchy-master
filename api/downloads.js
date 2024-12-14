@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 export default function handler(req, res) {
-    console.log("API hit: /api/downloads");
+    console.log("API hit: /api/downloads.js");
 
     const { file } = req.query;
     const filePath = path.join('/tmp', file);
