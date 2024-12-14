@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     }
 
     const basePath = path.join('/tmp', 'generatedFiles');
-    const baseArchivePath = 'project-name'; // Top-level directory in the ZIP
+    const baseArchivePath = 'project-name'; // Root folder name in the ZIP
 
     try {
         // Clean up existing directory
@@ -50,11 +50,10 @@ export default async function handler(req, res) {
                 if (isFile) {
                     console.log(`Creating file: ${fullPath}`);
                     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-                    fs.writeFileSync(
-                        fullPath,
-                        relativePath.startsWith('.') ? `# Placeholder for ${relativePath}` : '',
-                        'utf8'
-                    );
+
+                    // Write placeholder content for all dotfiles and normal files
+                    const content = relativePath.startsWith('.') ? `# Placeholder for ${relativePath}\n` : '';
+                    fs.writeFileSync(fullPath, content, 'utf8');
                 } else {
                     console.log(`Creating directory: ${fullPath}`);
                     fs.mkdirSync(fullPath, { recursive: true });
@@ -67,7 +66,7 @@ export default async function handler(req, res) {
         const lines = hierarchy.split('\n');
         processHierarchy(lines, basePath);
 
-        // Debugging: Log all files in the directory before zipping
+        // Debugging: Log all files and directories before zipping
         const debugFiles = (dir) => {
             const items = fs.readdirSync(dir, { withFileTypes: true });
             items.forEach((item) => {
