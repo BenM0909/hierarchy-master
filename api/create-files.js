@@ -1,56 +1,51 @@
-import fs from 'fs';
-import path from 'path';
-import archiver from 'archiver';
+const fs = require('fs');
+const path = require('path');
+const archiver = require('archiver');
 
 export default async function handler(req, res) {
-    console.log("API hit: /api/create-files.js");
-
     if (req.method !== 'POST') {
-        res.status(405).json({ success: false, error: 'Method not allowed' });
-        return;
+        return res.status(405).json({ error: 'Method not allowed' });
     }
 
     const { hierarchy } = req.body;
-
-    if (!hierarchy || typeof hierarchy !== 'string') {
-        res.status(400).json({ success: false, error: 'Invalid hierarchy format' });
-        return;
+    if (!hierarchy) {
+        return res.status(400).json({ error: 'No hierarchy provided' });
     }
 
-    const basePath = path.join('/tmp', 'generatedFiles'); // Temporary directory for generated files
-    const rootInArchive = 'project-name'; // Root folder name in the ZIP
+    const basePath = path.join('/tmp', 'generatedFiles'); // Use /tmp for Vercel compatibility
 
     try {
-        // Step 1: Clean up existing directory
+        // Cleanup existing directory
         if (fs.existsSync(basePath)) {
             fs.rmSync(basePath, { recursive: true, force: true });
         }
 
-        // Step 2: Parse hierarchy and create files
-        const processHierarchy = (lines, rootPath) => {
-            const stack = [{ path: rootPath, depth: -1 }];
-
+        // Process the hierarchy
+        const processHierarchy = (lines, basePath) => {
+            const stack = [{ path: basePath, depth: -1 }];
             lines.forEach((line) => {
                 const trimmedLine = line.trim();
                 if (!trimmedLine) return;
 
+                // Determine depth based on symbols
                 const depth = (line.match(/^[│├└─ ]+/)?.[0] || '').replace(/[├└─│]/g, '').length / 2;
                 const isFile = !trimmedLine.endsWith('/');
-                const relativePath = trimmedLine.replace(/^[├└─│ ]+/, '').trim();
+                const relativePath = trimmedLine.replace(/^[├└─│ ]+/, '');
 
+                // Adjust stack based on depth
                 while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
                     stack.pop();
                 }
 
-                const parentPath = stack[stack.length - 1]?.path || rootPath;
+                const parentPath = stack[stack.length - 1]?.path || basePath;
                 const fullPath = path.join(parentPath, relativePath);
 
                 if (isFile) {
-                    console.log(`Creating file: ${fullPath}`);
+                    // Handle dot files and create file
                     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
                     fs.writeFileSync(fullPath, '', 'utf8');
                 } else {
-                    console.log(`Creating directory: ${fullPath}`);
+                    // Create directory and push to stack
                     fs.mkdirSync(fullPath, { recursive: true });
                     stack.push({ path: fullPath, depth });
                 }
@@ -60,59 +55,42 @@ export default async function handler(req, res) {
         const lines = hierarchy.split('\n');
         processHierarchy(lines, basePath);
 
-        // Debug: Verify all files, including dotfiles
-        console.log("Debugging file system before archiving:");
-        const debugFiles = (dir) => {
-            const files = fs.readdirSync(dir, { withFileTypes: true });
-            files.forEach((file) => {
-                console.log(`Found: ${file.isFile() ? 'File' : 'Directory'} - ${file.name}`);
-                if (file.isDirectory()) {
-                    debugFiles(path.join(dir, file.name));
-                }
-            });
-        };
-        debugFiles(path.join(basePath, rootInArchive));
-
-        // Step 3: Create the ZIP
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', 'attachment; filename=project.zip');
-
-        const output = fs.createWriteStream('/tmp/project.zip');
+        // Archive the files into a ZIP
+        const zipPath = path.join('/tmp', 'generatedFiles.zip');
+        const output = fs.createWriteStream(zipPath);
         const archive = archiver('zip', { zlib: { level: 9 } });
 
+        output.on('close', () => {
+            res.setHeader('Content-Type', 'application/zip');
+            res.setHeader('Content-Disposition', `attachment; filename="generatedFiles.zip"`);
+            res.download(zipPath);
+        });
+
         archive.on('error', (err) => {
-            console.error("Archiving error:", err);
-            res.status(500).send("Internal Server Error");
+            throw err;
         });
 
         archive.pipe(output);
 
-        // Add files to archive explicitly, including dotfiles
-        const addFilesToArchive = (dir, base) => {
-            const items = fs.readdirSync(dir, { withFileTypes: true });
-            items.forEach((item) => {
-                const fullPath = path.join(dir, item.name);
-                const relativePath = path.relative(base, fullPath);
-                if (item.isDirectory()) {
-                    addFilesToArchive(fullPath, base);
+        // Include all files, including dot files
+        const walkDir = (dir) => {
+            const entries = fs.readdirSync(dir, { withFileTypes: true });
+            entries.forEach((entry) => {
+                const fullPath = path.join(dir, entry.name);
+                const archivePath = path.relative(basePath, fullPath);
+                if (entry.isDirectory()) {
+                    walkDir(fullPath);
                 } else {
-                    console.log(`Adding file to archive: ${relativePath}`);
-                    archive.file(fullPath, { name: relativePath });
+                    archive.file(fullPath, { name: archivePath });
                 }
             });
         };
 
-        addFilesToArchive(path.join(basePath, rootInArchive), path.join(basePath, rootInArchive));
+        walkDir(basePath);
 
         archive.finalize();
-
-        output.on('close', () => {
-            res.download('/tmp/project.zip');
-        });
-
-        console.log("ZIP file creation complete. Streaming to client.");
     } catch (err) {
-        console.error("ERROR:", err.message);
-        res.status(500).json({ success: false, error: err.message });
+        console.error('Error:', err);
+        res.status(500).json({ error: err.message });
     }
 }
