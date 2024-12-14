@@ -4,7 +4,87 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hierarchy Master</title>
-    <style></style>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            cursor: none;
+        }
+
+        textarea {
+            width: 300px;
+            height: 150px;
+            background-color: #1a1a1a;
+            color: white;
+            border: 1px solid transparent;
+            border-radius: 5px;
+            padding: 10px;
+            resize: none;
+            outline: none;
+            transition: all 0.3s;
+            overflow-y: scroll;
+        }
+
+        textarea:hover {
+            border-color: transparent;
+        }
+
+        textarea:focus {
+            border: 1px solid white;
+            transform: scale(1.05);
+        }
+
+        textarea::-webkit-scrollbar {
+            display: none;
+        }
+
+        button {
+            background-color: transparent;
+            color: white;
+            border: 1px solid white;
+            border-radius: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.3s, background-color 0.3s;
+        }
+
+        button:hover {
+            transform: scale(1.1);
+        }
+
+        .cursor-circle {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            background-color: gray;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transition: opacity 0.2s;
+        }
+
+        .hidden-cursor {
+            opacity: 0;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        .container textarea:hover ~ .cursor-circle,
+        .container textarea:focus ~ .cursor-circle {
+            opacity: 0;
+        }
+
+    </style>
 </head>
 <body>
     <div class="container">
