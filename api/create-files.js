@@ -17,7 +17,7 @@ export default async function handler(req, res) {
         return;
     }
 
-    const basePath = path.join('/tmp', 'generatedFiles'); // Temp directory to create files
+    const basePath = path.join('/tmp', 'generatedFiles'); // Temp directory for generated files
     const rootInArchive = 'project-name'; // Root folder name in the ZIP
 
     try {
@@ -36,7 +36,12 @@ export default async function handler(req, res) {
 
                 const depth = (line.match(/^[│├└─ ]+/)?.[0] || '').replace(/[├└─│]/g, '').length / 2;
                 const isFile = !trimmedLine.endsWith('/');
-                const relativePath = trimmedLine.replace(/^[├└─│ ]+/, '').trim();
+                let relativePath = trimmedLine.replace(/^[├└─│ ]+/, '').trim();
+
+                // Rename dotfiles temporarily (e.g., `.gitignore` → `temp.gitignore`)
+                if (relativePath.startsWith('.')) {
+                    relativePath = `temp${relativePath}`;
+                }
 
                 while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
                     stack.pop();
@@ -48,11 +53,7 @@ export default async function handler(req, res) {
                 if (isFile) {
                     console.log(`Creating file: ${fullPath}`);
                     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-                    fs.writeFileSync(
-                        fullPath,
-                        relativePath.startsWith('.') ? `# Placeholder for ${relativePath}` : '',
-                        'utf8'
-                    );
+                    fs.writeFileSync(fullPath, '', 'utf8');
                 } else {
                     console.log(`Creating directory: ${fullPath}`);
                     fs.mkdirSync(fullPath, { recursive: true });
@@ -64,19 +65,7 @@ export default async function handler(req, res) {
         const lines = hierarchy.split('\n');
         processHierarchy(lines, basePath);
 
-        // Step 3: Validate `.gitignore` and other files in the correct directory
-        const validateFile = (filePath) => {
-            if (fs.existsSync(filePath)) {
-                console.log(`File exists: ${filePath}`);
-            } else {
-                console.error(`ERROR: Missing file: ${filePath}`);
-            }
-        };
-
-        validateFile(path.join(basePath, 'project-name', '.gitignore'));
-        validateFile(path.join(basePath, 'project-name', '.env'));
-
-        // Step 4: Create the ZIP file
+        // Step 3: Create the ZIP
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', 'attachment; filename=project.zip');
 
@@ -88,19 +77,26 @@ export default async function handler(req, res) {
 
         archive.pipe(res);
 
-        // Step 5: Add files to archive without double nesting
+        // Step 4: Add files to archive, restoring dotfile names
         const addFilesToArchive = (dir, baseInArchive) => {
             const items = fs.readdirSync(dir, { withFileTypes: true });
             items.forEach((item) => {
-                const itemPath = path.join(dir, item.name);
-                const archivePath = path.join(baseInArchive, path.relative(basePath, itemPath)); // Fixes double nesting
+                let itemPath = path.join(dir, item.name);
+                let archivePath = path.join(baseInArchive, item.name);
+
+                // Restore original names for dotfiles
+                if (item.name.startsWith('temp.')) {
+                    const originalName = `.${item.name.slice(5)}`; // Strip 'temp.'
+                    archivePath = path.join(baseInArchive, originalName);
+                    console.log(`Restoring dotfile name for archive: ${archivePath}`);
+                }
 
                 if (item.isFile()) {
                     console.log(`Adding file to archive: ${archivePath}`);
                     archive.file(itemPath, { name: archivePath });
                 } else if (item.isDirectory()) {
                     console.log(`Processing directory: ${archivePath}`);
-                    addFilesToArchive(itemPath, baseInArchive); // Recursively add directories
+                    addFilesToArchive(itemPath, archivePath); // Recursively add directories
                 }
             });
         };
