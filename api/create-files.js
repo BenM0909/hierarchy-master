@@ -49,13 +49,7 @@ export default async function handler(req, res) {
                 if (isFile) {
                     console.log(`Creating file: ${fullPath}`);
                     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-
-                    // Add placeholder content for all dotfiles and other files
-                    if (relativePath.startsWith('.')) {
-                        fs.writeFileSync(fullPath, `# Placeholder content for ${relativePath}\n`, 'utf8');
-                    } else {
-                        fs.writeFileSync(fullPath, '', 'utf8');
-                    }
+                    fs.writeFileSync(fullPath, relativePath.startsWith('.') ? `# Placeholder for ${relativePath}` : '', 'utf8');
                 } else {
                     console.log(`Creating directory: ${fullPath}`);
                     fs.mkdirSync(fullPath, { recursive: true });
@@ -80,26 +74,24 @@ export default async function handler(req, res) {
 
         archive.pipe(res);
 
-        // Add the entire directory
-        archive.directory(basePath, false);
-
-        // Manually ensure all dotfiles are included in the archive
-        const addDotfilesToArchive = (dir, baseInArchive) => {
+        // Manually add files and directories recursively to ensure all dotfiles are included
+        const addFilesToArchive = (dir, baseInArchive) => {
             const items = fs.readdirSync(dir, { withFileTypes: true });
             items.forEach((item) => {
                 const itemPath = path.join(dir, item.name);
-                const relativeArchivePath = path.join(baseInArchive, item.name);
+                const archivePath = path.join(baseInArchive, item.name);
 
-                if (item.isFile() && item.name.startsWith('.')) {
-                    console.log(`Explicitly adding dotfile to archive: ${itemPath}`);
-                    archive.file(itemPath, { name: relativeArchivePath });
+                if (item.isFile()) {
+                    console.log(`Adding file to archive: ${archivePath}`);
+                    archive.file(itemPath, { name: archivePath });
                 } else if (item.isDirectory()) {
-                    addDotfilesToArchive(itemPath, relativeArchivePath); // Recursively handle directories
+                    console.log(`Processing directory: ${itemPath}`);
+                    addFilesToArchive(itemPath, archivePath); // Recursively add directories
                 }
             });
         };
 
-        addDotfilesToArchive(basePath, '');
+        addFilesToArchive(basePath, 'project-name');
 
         // Finalize the archive
         await archive.finalize();
