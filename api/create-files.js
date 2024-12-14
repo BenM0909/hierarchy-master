@@ -77,17 +77,17 @@ export default async function handler(req, res) {
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', 'attachment; filename=project.zip');
 
+        const output = fs.createWriteStream('/tmp/project.zip');
         const archive = archiver('zip', { zlib: { level: 9 } });
+
         archive.on('error', (err) => {
             console.error("Archiving error:", err);
             res.status(500).send("Internal Server Error");
         });
 
-        archive.pipe(res);
+        archive.pipe(output);
 
         // Add files to archive explicitly, including dotfiles
-        const sourceFolder = path.join(basePath, rootInArchive);
-
         const addFilesToArchive = (dir, base) => {
             const items = fs.readdirSync(dir, { withFileTypes: true });
             items.forEach((item) => {
@@ -102,10 +102,14 @@ export default async function handler(req, res) {
             });
         };
 
-        addFilesToArchive(sourceFolder, sourceFolder);
+        addFilesToArchive(path.join(basePath, rootInArchive), path.join(basePath, rootInArchive));
 
-        // Finalize the archive
-        await archive.finalize();
+        archive.finalize();
+
+        output.on('close', () => {
+            res.download('/tmp/project.zip');
+        });
+
         console.log("ZIP file creation complete. Streaming to client.");
     } catch (err) {
         console.error("ERROR:", err.message);
