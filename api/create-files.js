@@ -3,7 +3,7 @@ import path from 'path';
 import archiver from 'archiver';
 
 export default async function handler(req, res) {
-    console.log("API hit: /api/create-files.js"); // Log with .js for debugging
+    console.log("API hit: /api/create-files.js");
 
     if (req.method !== 'POST') {
         console.log("Invalid method:", req.method);
