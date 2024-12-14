@@ -87,6 +87,11 @@
             background-color: rgba(255, 255, 255, 0.1);
         }
 
+        #warning {
+            color: red;
+            font-weight: bold;
+        }
+
         #status {
             margin-top: 20px;
             font-weight: bold;
@@ -106,6 +111,15 @@
         #downloadLink a:hover {
             text-decoration: underline;
         }
+
+        .cursor-circle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: red; /* Adjust color as needed */
+            z-index: 100; /* Ensure the circle is on top */
+        }
     </style>
 </head>
 <body>
@@ -116,6 +130,7 @@
             <button id="generateButton">Generate Files</button>
         </div>
         <p id="status"></p>
+        <p id="warning">WARNING: dot files (.env, .gitignore, etc.) will not be generated in the hierarchy</p>
     </div>
     <script>
         document.getElementById('generateButton').addEventListener('click', () => {
