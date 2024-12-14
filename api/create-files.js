@@ -21,6 +21,7 @@ export default async function handler(req, res) {
     const zipPath = path.join('/tmp', 'generatedFiles.zip');
 
     console.log("Base path:", basePath);
+    console.log("ZIP path:", zipPath);
 
     try {
         // Cleanup old files and directories
@@ -60,7 +61,7 @@ export default async function handler(req, res) {
         const archive = archiver('zip', { zlib: { level: 9 } });
 
         output.on('close', () => {
-            console.log(`ZIP file (${zipPath}) created successfully. Size: ${archive.pointer()} bytes`);
+            console.log(`ZIP file created successfully. Size: ${archive.pointer()} bytes`);
             res.json({ success: true, downloadUrl: `/api/downloads.js?file=generatedFiles.zip` });
         });
 
