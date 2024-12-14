@@ -145,14 +145,20 @@ project-name/
                 return;
             }
 
-            fetch('/api/create-files', { // Updated for Vercel API route
+            fetch('/api/create-files', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ hierarchy: fileHierarchy }),
             })
-                .then(response => response.json())
+                .then(async response => {
+                    if (!response.ok) {
+                        const errorText = await response.text(); // Get the error response as text
+                        throw new Error(`HTTP Error: ${response.status}. Response: ${errorText}`);
+                    }
+                    return response.json(); // Parse the response as JSON
+                })
                 .then(data => {
                     if (data.success) {
                         status.textContent = 'Files and folders generated successfully!';
@@ -163,7 +169,8 @@ project-name/
                     }
                 })
                 .catch(err => {
-                    status.textContent = 'Error: ' + err.message;
+                    console.error('Error during fetch:', err.message); // Log the error to the console
+                    status.textContent = `Error: ${err.message}`;
                     downloadLink.innerHTML = '';
                 });
         });
