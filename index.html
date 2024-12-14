@@ -13,6 +13,7 @@
             line-height: 1.6;
             padding: 20px;
             margin: 0;
+            text-align: center;
         }
 
         .container {
@@ -24,12 +25,12 @@
 
         h1 {
             color: #ffffff;
-            text-align: center;
             margin-bottom: 2rem;
+            transition: all 0.3s;
         }
 
         h1:hover {
-            transform: scale(1.05);
+            transform: scale(1.02);
         }
 
         form {
@@ -40,7 +41,6 @@
             display: block;
             margin-bottom: 5px;
             color: #ffffff;
-            text-align: center;
         }
 
         textarea {
@@ -54,6 +54,7 @@
             transition: border-color 0.3s;
             box-sizing: border-box;
             justify-content: center;
+            text-align: left;
         }
 
         textarea;hover {
@@ -70,7 +71,6 @@
         }
 
         .button-container {
-            text-align: center;
             margin-top: 1rem;
         }
 
@@ -94,11 +94,11 @@
             color: red;
             font-weight: bold;
             margin-top: 40px;
-            text-align: center;
+            transition: all 0.3s;
         }
 
         #warning:hover {
-            transform: scale(1.05);
+            transform: scale(1.02);
         }
 
         #status {
@@ -140,6 +140,7 @@
         </div>
         <p id="status"></p>
         <p id="warning">WARNING: dot files (.env, .gitignore, etc.) will not be generated in the hierarchy</p>
+        <footer>&copy 2024 Hierarchy Master</footer>
     </div>
     <script>
         document.getElementById('generateButton').addEventListener('click', () => {
