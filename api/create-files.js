@@ -50,9 +50,9 @@ export default async function handler(req, res) {
                     console.log(`Creating file: ${fullPath}`);
                     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
 
-                    // Explicitly handle .gitignore and other dotfiles
-                    if (relativePath === '.gitignore') {
-                        fs.writeFileSync(fullPath, '# This is a .gitignore file\n', 'utf8');
+                    // Add placeholder content for dotfiles and other files
+                    if (relativePath.startsWith('.')) {
+                        fs.writeFileSync(fullPath, `# Placeholder content for ${relativePath}\n`, 'utf8');
                     } else {
                         fs.writeFileSync(fullPath, '', 'utf8');
                     }
@@ -83,14 +83,21 @@ export default async function handler(req, res) {
         // Add the entire directory
         archive.directory(basePath, false);
 
-        // Manually include .gitignore to ensure it's in the ZIP
-        const gitignorePath = path.join(basePath, '.gitignore');
-        if (fs.existsSync(gitignorePath)) {
-            console.log("Explicitly adding .gitignore to the archive");
-            archive.file(gitignorePath, { name: 'project-name/.gitignore' });
-        } else {
-            console.error(".gitignore was not found in the directory structure.");
-        }
+        // Manually ensure all dotfiles are included in the archive
+        const addDotfiles = (dir) => {
+            const items = fs.readdirSync(dir, { withFileTypes: true });
+            items.forEach((item) => {
+                const itemPath = path.join(dir, item.name);
+                if (item.isFile() && item.name.startsWith('.')) {
+                    console.log(`Explicitly adding dotfile to archive: ${itemPath}`);
+                    archive.file(itemPath, { name: path.relative(basePath, itemPath) });
+                } else if (item.isDirectory()) {
+                    addDotfiles(itemPath); // Recursively handle directories
+                }
+            });
+        };
+
+        addDotfiles(basePath);
 
         // Finalize the archive
         await archive.finalize();
