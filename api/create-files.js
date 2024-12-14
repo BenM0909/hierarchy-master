@@ -64,9 +64,14 @@ export default async function handler(req, res) {
         console.log("Debugging file system before archiving:");
         const debugFiles = (dir) => {
             const files = fs.readdirSync(dir, { withFileTypes: true });
-            files.forEach((file) => console.log(`Found: ${file.name}`));
+            files.forEach((file) => {
+                console.log(`Found: ${file.isFile() ? 'File' : 'Directory'} - ${file.name}`);
+                if (file.isDirectory()) {
+                    debugFiles(path.join(dir, file.name));
+                }
+            });
         };
-        debugFiles(path.join(basePath, 'project-name'));
+        debugFiles(path.join(basePath, rootInArchive));
 
         // Step 3: Create the ZIP
         res.setHeader('Content-Type', 'application/zip');
@@ -81,7 +86,8 @@ export default async function handler(req, res) {
         archive.pipe(res);
 
         // Add files to archive explicitly, including dotfiles
-        const sourceFolder = path.join(basePath, 'project-name');
+        const sourceFolder = path.join(basePath, rootInArchive);
+
         archive.glob("**/*", { cwd: sourceFolder, dot: true });
 
         // Finalize the archive
