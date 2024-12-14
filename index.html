@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hierarchy Master</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <style>
+        /* Dark theme styles */
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Roboto', Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+        }
+
+        h1 {
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background-color: #2a2a2a;
+            color: #ffffff;
+            font-family: 'Roboto Mono', monospace;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+
+        textarea::-webkit-scrollbar {
+            display: none;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #ffffff;
+        }
+
+        .button-container {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        button {
+            background-color: transparent;
+            color: #ffffff;
+            border: 1px solid #ffffff;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #status {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        #downloadLink {
+            text-align: center;
+        }
+
+        #downloadLink a {
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        #downloadLink a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hierarchy Master</h1>
+        <form id="hierarchyForm">
+            <label for="fileHierarchy">Enter File Hierarchy:</label><br>
+            <textarea id="fileHierarchy" rows="10" cols="50" placeholder="Example:
+project-name/
+├─ public/
+│   ├─ index.html
+│   └─ styles.css
+├─ src/
+│   ├─ main.js
+│   ├─ helpers/
+│   │   └─ utils.js
+│   ├─ components/
+│   │   ├─ Header.js
+│   │   ├─ Footer.js
+│   │   └─ Sidebar.js
+│   └─ styles/
+│       └─ app.css
+├─ README.md
+├─ package.json
+└─ .gitignore"></textarea><br><br>
+            <div class="button-container">
+                <button type="button" id="generateButton">Generate Files</button>
+            </div>
+        </form>
+        <p id="status"></p>
+        <p id="downloadLink"></p>
+    </div>
+
+    <script>
+        document.getElementById('generateButton').addEventListener('click', function () {
+            const fileHierarchy = document.getElementById('fileHierarchy').value;
+            const status = document.getElementById('status');
+            const downloadLink = document.getElementById('downloadLink');
+
+            if (!fileHierarchy.trim()) {
+                status.textContent = 'Please enter a valid file hierarchy.';
+                return;
+            }
+
+            fetch('http://localhost:3000/create-files', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ hierarchy: fileHierarchy }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        status.textContent = 'Files and folders generated successfully!';
+                        downloadLink.innerHTML = `<a href="${data.downloadUrl}" download>Click here to download the files</a>`;
+                    } else {
+                        status.textContent = 'Failed to generate files: ' + data.error;
+                        downloadLink.innerHTML = '';
+                    }
+                })
+                .catch(err => {
+                    status.textContent = 'Error: ' + err.message;
+                    downloadLink.innerHTML = '';
+                });
+        });
+    </script>
+</body>
+</html>
+
