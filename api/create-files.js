@@ -49,8 +49,6 @@ export default async function handler(req, res) {
                 if (isFile) {
                     console.log(`Creating file: ${fullPath}`);
                     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-
-                    // Write dotfiles and normal files
                     fs.writeFileSync(
                         fullPath,
                         relativePath.startsWith('.') ? `# Placeholder for ${relativePath}` : '',
@@ -67,6 +65,18 @@ export default async function handler(req, res) {
         // Split the hierarchy into lines and process it
         const lines = hierarchy.split('\n');
         processHierarchy(lines, basePath);
+
+        // Debugging: Log all files in the directory before zipping
+        const debugFiles = (dir) => {
+            const items = fs.readdirSync(dir, { withFileTypes: true });
+            items.forEach((item) => {
+                const itemPath = path.join(dir, item.name);
+                console.log(item.isFile() ? `Found file: ${itemPath}` : `Found directory: ${itemPath}`);
+                if (item.isDirectory()) debugFiles(itemPath);
+            });
+        };
+        console.log("Directory contents before zipping:");
+        debugFiles(basePath);
 
         // Create ZIP file
         res.setHeader('Content-Type', 'application/zip');
