@@ -27,7 +27,6 @@ export default async function handler(req, res) {
         }
 
         // Step 2: Parse hierarchy and create files
-        const tempDotfiles = []; // Track temp dotfiles for cleanup
         const processHierarchy = (lines, rootPath) => {
             const stack = [{ path: rootPath, depth: -1 }];
 
@@ -37,14 +36,7 @@ export default async function handler(req, res) {
 
                 const depth = (line.match(/^[│├└─ ]+/)?.[0] || '').replace(/[├└─│]/g, '').length / 2;
                 const isFile = !trimmedLine.endsWith('/');
-                let relativePath = trimmedLine.replace(/^[├└─│ ]+/, '').trim();
-
-                // Temporarily rename dotfiles (e.g., `.gitignore` → `temp.gitignore`)
-                if (relativePath.startsWith('.')) {
-                    const tempName = `temp${relativePath}`;
-                    tempDotfiles.push(path.join(rootPath, tempName));
-                    relativePath = tempName;
-                }
+                const relativePath = trimmedLine.replace(/^[├└─│ ]+/, '').trim();
 
                 while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
                     stack.pop();
@@ -80,42 +72,28 @@ export default async function handler(req, res) {
 
         archive.pipe(res);
 
-        // Step 4: Add files to archive, restoring dotfile names
+        // Step 4: Add files to archive explicitly
         const addFilesToArchive = (dir, baseInArchive) => {
             const items = fs.readdirSync(dir, { withFileTypes: true });
             items.forEach((item) => {
-                let itemPath = path.join(dir, item.name);
-                let archivePath = path.join(baseInArchive, item.name);
-
-                // Restore dotfile names in the ZIP
-                if (item.name.startsWith('temp.')) {
-                    const originalName = `.${item.name.slice(5)}`; // Strip 'temp.'
-                    archivePath = path.join(baseInArchive, originalName);
-                    console.log(`Restoring dotfile name for archive: ${archivePath}`);
-                }
+                const itemPath = path.join(dir, item.name);
+                const archivePath = path.join(baseInArchive, path.relative(basePath, itemPath));
 
                 if (item.isFile()) {
                     console.log(`Adding file to archive: ${archivePath}`);
                     archive.file(itemPath, { name: archivePath });
                 } else if (item.isDirectory()) {
                     console.log(`Processing directory: ${archivePath}`);
-                    addFilesToArchive(itemPath, archivePath); // Recursively add directories
+                    addFilesToArchive(itemPath, baseInArchive); // Recursively add directories
                 }
             });
         };
 
         addFilesToArchive(basePath, rootInArchive);
 
-        // Step 5: Finalize and cleanup temporary dotfiles
+        // Finalize the archive
         await archive.finalize();
         console.log("ZIP file creation complete. Streaming to client.");
-
-        // Remove temporary dotfiles or rename them back
-        tempDotfiles.forEach((tempFilePath) => {
-            const originalPath = tempFilePath.replace('/temp.', '/.');
-            console.log(`Restoring original dotfile name: ${originalPath}`);
-            fs.renameSync(tempFilePath, originalPath);
-        });
     } catch (err) {
         console.error("ERROR:", err.message);
         res.status(500).json({ success: false, error: err.message });
