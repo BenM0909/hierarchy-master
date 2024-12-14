@@ -145,7 +145,8 @@ project-name/
                 return;
             }
 
-            fetch('/api/create-files', {
+            // Fetch the API route
+            fetch('/api/create-files', { // Correct relative path
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -154,10 +155,10 @@ project-name/
             })
                 .then(async response => {
                     if (!response.ok) {
-                        const errorText = await response.text(); // Get the error response as text
+                        const errorText = await response.text(); // Get error details
                         throw new Error(`HTTP Error: ${response.status}. Response: ${errorText}`);
                     }
-                    return response.json(); // Parse the response as JSON
+                    return response.json();
                 })
                 .then(data => {
                     if (data.success) {
@@ -169,7 +170,7 @@ project-name/
                     }
                 })
                 .catch(err => {
-                    console.error('Error during fetch:', err.message); // Log the error to the console
+                    console.error('Error during fetch:', err.message);
                     status.textContent = `Error: ${err.message}`;
                     downloadLink.innerHTML = '';
                 });
