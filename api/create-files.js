@@ -3,7 +3,7 @@ import path from 'path';
 import archiver from 'archiver';
 
 export default async function handler(req, res) {
-    console.log("Request received at /api/create-files"); // Log request received
+    console.log("Request received at /api/create-files");
 
     if (req.method !== 'POST') {
         res.status(405).json({ success: false, error: 'Method not allowed' });
@@ -12,22 +12,19 @@ export default async function handler(req, res) {
 
     const { hierarchy } = req.body;
 
-    // Validate input
     if (!hierarchy || typeof hierarchy !== 'string') {
         res.status(400).json({ success: false, error: 'Invalid hierarchy format' });
         return;
     }
 
-    const basePath = path.join('/tmp', 'generatedFiles'); // Use '/tmp' for serverless storage
+    const basePath = path.join('/tmp', 'generatedFiles');
 
     try {
-        // Clean up existing directory
         if (fs.existsSync(basePath)) {
             console.log("Cleaning up existing directory...");
             fs.rmSync(basePath, { recursive: true, force: true });
         }
 
-        // Process the hierarchy
         const processHierarchy = (lines, basePath) => {
             const stack = [{ path: basePath, depth: -1 }];
             lines.forEach((line) => {
@@ -56,16 +53,13 @@ export default async function handler(req, res) {
         };
 
         const lines = hierarchy.split('\n');
-        console.log("Processing hierarchy...");
         processHierarchy(lines, basePath);
 
-        // Create ZIP file
         const zipPath = path.join('/tmp', 'generatedFiles.zip');
         const output = fs.createWriteStream(zipPath);
         const archive = archiver('zip', { zlib: { level: 9 } });
 
         output.on('close', () => {
-            console.log("ZIP file created successfully:", zipPath);
             res.json({
                 success: true,
                 downloadUrl: `/api/downloads?file=generatedFiles.zip`,
