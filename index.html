@@ -88,7 +88,7 @@
 
         button:hover {
             transform: scale(1.05);
-            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
         }
 
         #warning {
@@ -109,19 +109,6 @@
             text-align: center;
         }
 
-        #downloadLink {
-            text-align: center;
-        }
-
-        #downloadLink a {
-            color: #ffffff;
-            text-decoration: none;
-        }
-
-        #downloadLink a:hover {
-            text-decoration: underline;
-        }
-
         .cursor {
             position: fixed;
             border-radius: 50%;
@@ -133,8 +120,8 @@
             background-color: transparent;
             z-index: 10000;
             border: 2px solid white;
-            height: 30px;
-            width: 30px;
+            height: 50px;
+            width: 50px;
             transition: all 300ms ease-out;
         }
     </style>
@@ -144,7 +131,25 @@
 
     <div class="container">
         <h1>Hierarchy Master</h1>
-        <textarea id="fileHierarchy" placeholder="Enter your file hierarchy here..."></textarea>
+        <textarea id="fileHierarchy" placeholder="Enter your file hierarchy here...
+Example:
+project-name/
+├─ public/
+│   ├─ index.html
+│   └─ styles.css
+├─ src/
+│   ├─ main.js
+│   ├─ helpers/
+│   │   └─ utils.js
+│   ├─ components/
+│   │   ├─ Header.js
+│   │   ├─ Footer.js
+│   │   └─ Sidebar.js
+│   └─ styles/
+│       └─ app.css
+├─ README.md
+├─ package.json
+└─ .gitignore""></textarea>
         <div class="button-container">
             <button id="generateButton">Generate Files</button>
         </div>
